@@ -12,7 +12,10 @@ export const MODELS = {
   report: process.env.MEDILOG_REPORT_MODEL ?? "claude-sonnet-5-5",
 };
 
-const client = new Anthropic();
+// Created on first use, so tools that only need the prompt and schema (the
+// eval harness) can import this module without an API key.
+let anthropic: Anthropic | null = null;
+const client = () => (anthropic ??= new Anthropic());
 
 // ---------------------------------------------------------------- schemas
 
@@ -72,7 +75,7 @@ const ReportProse = z.object({
 
 // ---------------------------------------------------------------- prompts
 
-const EXTRACT_SYSTEM = `You are the intake scribe inside Medilog, a patient-owned symptom journal. A patient has just dictated a short note about a symptom episode, often while unwell or half-asleep. Turn it into a structured clinical history and choose one follow-up question.
+export const EXTRACT_SYSTEM = `You are the intake scribe inside Medilog, a patient-owned symptom journal. A patient has just dictated a short note about a symptom episode, often while unwell or half-asleep. Turn it into a structured clinical history and choose one follow-up question.
 
 Translate, don't diagnose. Record only what the patient said. Never name a condition, suggest a cause, give advice, or triage. This keeps the product a communication tool rather than a medical device, and it is what makes clinicians trust the output.
 
@@ -106,7 +109,7 @@ export class ModelDeclined extends Error {}
 const efficacy = (e: string | null): Efficacy | null => (e === null ? null : (EFFICACY as readonly string[]).includes(e) ? (e as Efficacy) : "unknown");
 const severity = (n: number | null) => (n === null ? null : Math.max(0, Math.min(10, Math.round(n))));
 
-function normalise(x: z.infer<typeof Extraction>): ExtractionResult {
+export function normaliseExtraction(x: z.infer<typeof Extraction>): ExtractionResult {
   return {
     fields: {
       ...x.fields,
@@ -124,8 +127,11 @@ function normalise(x: z.infer<typeof Extraction>): ExtractionResult {
   };
 }
 
+export const extractionUserMessage = (input: { text: string; loggedAt: string; prior: string | null }) =>
+  `Logged at: ${input.loggedAt}\nPrior log: ${input.prior ?? "none"}\n\n<note>\n${input.text}\n</note>`;
+
 export async function extractWithClaude(input: { text: string; loggedAt: string; prior: string | null }) {
-  const response = await client.messages.parse({
+  const response = await client().messages.parse({
     model: MODELS.extract,
     max_tokens: 4000,
     output_config: { effort: "low", format: zodOutputFormat(Extraction) },
@@ -133,17 +139,17 @@ export async function extractWithClaude(input: { text: string; loggedAt: string;
     messages: [
       {
         role: "user",
-        content: `Logged at: ${input.loggedAt}\nPrior log: ${input.prior ?? "none"}\n\n<note>\n${input.text}\n</note>`,
+        content: extractionUserMessage(input),
       },
     ],
   });
   if (response.stop_reason === "refusal" || !response.parsed_output) throw new ModelDeclined(`extraction stopped: ${response.stop_reason}`);
-  return { result: normalise(response.parsed_output), usage: toUsage(response.model, response.usage) };
+  return { result: normaliseExtraction(response.parsed_output), usage: toUsage(response.model, response.usage) };
 }
 
 export async function reportWithClaude(facts: unknown) {
   // Server-side fallbacks re-run a declined request on another model inside the same call.
-  const response = await client.beta.messages.parse({
+  const response = await client().beta.messages.parse({
     model: MODELS.report,
     max_tokens: 8000,
     betas: ["server-side-fallback-2026-07-01"],

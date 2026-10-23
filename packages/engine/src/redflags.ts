@@ -19,14 +19,15 @@ const RULES: Rule[] = [
     any: [
       [/chest (pain|pressure|tightness)|pain in my chest/, /crushing|squeezing|pressure|heavy|tight|(arm|jaw|neck)|sweat|short of breath|can'?t breathe/],
       [/crushing (pain|feeling)/, /chest/],
+      [/(crushing|squeezing|heavy|heaviness|pressure) .{0,20}\b(in|on|across) (my |the )?chest/],
     ],
   },
   {
     id: "stroke",
     title: "Possible stroke",
     any: [
-      [/face (is )?(droop\w*|drooping|numb)|droopy face|one side of my face/],
-      [/slurr\w* (my )?(speech|words)|can'?t (speak|get my words out)|words (came|coming) out wrong/],
+      [/(face|mouth|smile) (is |went |has gone |feels |is going )?(droop\w*|numb|lopsided|crooked)|droopy face|one side of my face|numb on one side/],
+      [/\bslurr(ed|ing)\b|can'?t (speak|get my words out)|words (came|coming) out wrong/],
       [/(can'?t (move|feel|lift)|weak\w*|numb\w*) (in )?(my )?(left|right|one) (side|arm|leg)/],
       [/sudden(ly)? (lost|loss of|can'?t) (my )?(vision|see)/],
     ],
@@ -34,7 +35,12 @@ const RULES: Rule[] = [
   {
     id: "thunderclap",
     title: "Sudden severe headache",
-    any: [[/thunderclap/], [/worst headache (of my life|ever)/], [/sudden\w* (severe|explosive|excruciating) headache/]],
+    any: [
+      [/thunderclap/],
+      [/worst headache (of my life|ever|i'?ve ever had|i have ever had)/],
+      [/sudden\w* (severe|explosive|excruciating) headache/],
+      [/headache/, /came on (in|within) (seconds|a second|an instant)|hit me like a|out of nowhere.{0,20}worst/],
+    ],
   },
   {
     id: "breathing",
@@ -51,6 +57,7 @@ const RULES: Rule[] = [
     title: "Severe bleeding",
     any: [
       [/soak\w* (through )?(a |my )?(pad|tampon|cup)s? (every|in an?|within an?) (hour|30)/],
+      [/soak\w* (through )?(an? |my )?(\w+ )?(pad|tampon|cup|undies|pants|clothes|sheets)/, /dizz|faint|light-?headed|passing out|every hour|within an hour|in (an?|one|two|2|1) hours?/],
       [/(vomit\w*|throwing up|coughing( up)?) blood|blood in (my )?vomit/],
       [/black,? tarry|tarry (poo|stool)/],
       [/bleeding (heavily|a lot)|heavy bleeding/, /pregnan\w*|dizzy|faint\w*|passing out/],
@@ -65,11 +72,13 @@ const RULES: Rule[] = [
     id: "self-harm",
     title: "You deserve support right now",
     crisis: true,
-    any: [[/(kill|hurt|harm) myself|suicid\w*|end (it all|my life)|don'?t want to (be here|live)|better off dead/]],
+    any: [
+      [/(kill|hurt|harm) myself|suicid\w*|end (it all|my life)|don'?t want to (be here|live)|better off dead|better off without me|no reason to (live|keep going)|can'?t go on/],
+    ],
   },
 ];
 
-const NEGATED = /\b(no|not|without|denies|never|wasn'?t|isn'?t)\s+(\w+\s+){0,2}$/;
+const NEGATED = /\b(no|not|without|denies|never|wasn'?t|isn'?t|haven'?t|hasn'?t|didn'?t|don'?t)\s+(\w+\s+){0,2}$/;
 
 function firstUnnegatedMatch(text: string, re: RegExp): string | null {
   const g = new RegExp(re.source, "g");

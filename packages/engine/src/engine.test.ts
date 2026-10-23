@@ -78,6 +78,12 @@ describe("red-flag screen", () => {
     "soaking through a pad every hour and feel dizzy",
     "I fainted in the shower",
     "I don't want to be here anymore",
+    // Paraphrases the first rule set missed (see eval/cases.ts).
+    "Crushing pressure in my chest and my jaw aches",
+    "Worst headache I've ever had, came on in seconds",
+    "Face went numb on one side and my words came out slurred",
+    "Soaked through a super tampon in two hours and I'm really dizzy getting up",
+    "I've been thinking everyone would be better off without me",
   ])("flags %s", (text) => {
     expect(screenRedFlags(text)).not.toBeNull();
   });
@@ -86,9 +92,12 @@ describe("red-flag screen", () => {
     expect(screenRedFlags("I want to kill myself")?.crisis).toBe(true);
   });
 
-  it.each(["No chest pain, just cramps", "Cramping low on my right, no fainting", "headache, not the worst ever"])("does not flag %s", (text) => {
-    expect(screenRedFlags(text)).toBeNull();
-  });
+  it.each(["No chest pain, just cramps", "Cramping low on my right, no fainting", "headache, not the worst ever", "Haven't fainted, just a bit lightheaded", "Chest feels tight when I'm anxious, not painful"])(
+    "does not flag %s",
+    (text) => {
+      expect(screenRedFlags(text)).toBeNull();
+    },
+  );
 
   it("passes every seeded note", () => {
     for (const n of SEED_NOTES) expect(screenRedFlags(n.text)).toBeNull();
