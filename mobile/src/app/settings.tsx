@@ -74,7 +74,7 @@ export default function SettingsScreen() {
         <T kind="eyebrow">Privacy</T>
         <Toggle
           label="Voice never leaves this phone"
-          detail="Only use on-device speech recognition. If your phone can't do that, you'll type instead."
+          detail="Only use on-device speech recognition. On Android, the Log screen offers to download the English model if it's missing; otherwise you'll type instead."
           value={j.settings.requireOnDeviceSpeech}
           onChange={(v) => void j.updateSettings({ requireOnDeviceSpeech: v })}
         />

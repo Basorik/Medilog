@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useJournal } from "../../lib/journal";
-import { speechMode, useVoiceNote } from "../../lib/speech";
+import { useVoiceNote } from "../../lib/speech";
 import { atLeast } from "../../lib/timing";
 import { RedFlagModal } from "../../ui/RedFlagModal";
 import { Badge, Button, Card, Pill, Row, Screen, T, TagChip } from "../../ui/components";
@@ -35,7 +35,7 @@ export default function LogScreen() {
   const j = useJournal();
   const c = useColors();
   const voice = useVoiceNote(j.settings.requireOnDeviceSpeech);
-  const mode = Platform.OS === "web" ? "platform" : speechMode(j.settings.requireOnDeviceSpeech);
+  const mode = voice.plan?.mode;
   const [phase, setPhase] = useState<Phase>("idle");
   const [draft, setDraft] = useState("");
   const [entry, setEntry] = useState<Entry | null>(null);
@@ -236,7 +236,7 @@ export default function LogScreen() {
           ) : (
             <Button kind="link" label="or type it instead" onPress={() => setPhase("typing")} />
           )}
-          {phase === "idle" && (
+          {phase === "idle" && mode && (
             <Badge
               tone={mode === "on-device" ? "ok" : "local"}
               label={
@@ -246,6 +246,14 @@ export default function LogScreen() {
                     ? `Voice uses ${Platform.OS === "ios" ? "Apple" : Platform.OS === "android" ? "Google" : "the browser's"} speech service`
                     : "Voice unavailable: type instead"
               }
+            />
+          )}
+          {phase === "idle" && voice.plan?.downloadableLocale && Platform.OS === "android" && (
+            <Button
+              kind="link"
+              label={voice.downloading ? "Starting download…" : "Download on-device English so voice stays on this phone"}
+              disabled={voice.downloading}
+              onPress={() => void voice.downloadModel()}
             />
           )}
           {voice.error && phase === "idle" && <T kind="small" style={{ color: c.warn, textAlign: "center" }}>{voice.error}</T>}
