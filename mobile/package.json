@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/metro-runtime": "~58.0.15",
+    "@expo/vector-icons": "^15.0.2",
     "@medilog/engine": "file:../packages/engine",
     "expo": "~58.0.17",
     "expo-constants": "~58.0.13",

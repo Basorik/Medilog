@@ -19,7 +19,15 @@ function RootStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="settings"
-          options={{ presentation: "modal", headerShown: true, title: "Settings", headerStyle: { backgroundColor: c.bg }, headerTintColor: c.ink }}
+          options={{
+            presentation: "modal",
+            headerShown: true,
+            title: "Settings",
+            headerStyle: { backgroundColor: c.bg },
+            headerTintColor: c.primary,
+            headerTitleStyle: { color: c.ink, fontWeight: "600" },
+            headerShadowVisible: false,
+          }}
         />
       </Stack.Protected>
       <Stack.Protected guard={!settings.onboarded}>

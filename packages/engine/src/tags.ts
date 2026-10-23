@@ -60,6 +60,26 @@ export function tagsFor(f: HpiFields): Tag[] {
   return tags;
 }
 
+const lower = (s: string) => (/^[A-Z][a-z]/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+
+/**
+ * One calm line describing an entry, in the patient's own words, for lists:
+ * "Lower right side · sharp, cramping · woke me at 3 AM · ibuprofen: minimal relief".
+ * Severity is left out; lists show it separately.
+ */
+export function entrySummary(f: HpiFields, maxParts = 5): string {
+  const parts: string[] = [];
+  if (f.site) parts.push(f.site.patient);
+  if (f.character.length) parts.push(f.character.map((c) => c.patient.toLowerCase()).join(", "));
+  if (f.onset) parts.push(f.onset.patient);
+  for (const t of f.treatments) parts.push(t.efficacy === "unknown" ? t.name : `${t.name}: ${EFFICACY_LABEL[t.efficacy]}`);
+  for (const a of f.associated) parts.push(a.patient);
+  for (const fn of f.functional) parts.push(fn.patient);
+  if (f.cycle) parts.push(f.cycle.patient);
+  const shown = parts.slice(0, maxParts).map((p, i) => (i === 0 ? cap(p) : lower(p)));
+  return shown.join(" · ") + (parts.length > maxParts ? " …" : "");
+}
+
 export type TagEdit =
   | { type: "remove" }
   | { type: "rename"; patient: string; clinical: string }

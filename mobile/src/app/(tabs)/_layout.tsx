@@ -1,11 +1,15 @@
-import { Link } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router/tabs";
-import { Pressable, Text } from "react-native";
+import type { ComponentProps } from "react";
+import { Platform, StyleSheet } from "react-native";
 import { useColors } from "../../ui/theme";
 
-const icon = (glyph: string) =>
+type IconName = ComponentProps<typeof Ionicons>["name"];
+
+const icon = (on: IconName, off: IconName) =>
   function TabIcon({ focused }: { focused: boolean }) {
-    return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.55 }}>{glyph}</Text>;
+    const c = useColors();
+    return <Ionicons name={focused ? on : off} size={22} color={focused ? c.primary : c.muted} />;
   };
 
 export default function TabsLayout() {
@@ -13,25 +17,17 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.muted,
-        tabBarStyle: { backgroundColor: c.bg, borderTopColor: c.line },
-        headerStyle: { backgroundColor: c.bg },
-        headerShadowVisible: false,
-        headerTintColor: c.ink,
-        headerTitleStyle: { fontWeight: "700" },
-        headerRight: () => (
-          <Link href="/settings" asChild>
-            <Pressable accessibilityLabel="Settings" hitSlop={12} style={{ paddingHorizontal: 16 }}>
-              <Text style={{ fontSize: 20, color: c.ink2 }}>⚙︎</Text>
-            </Pressable>
-          </Link>
-        ),
+        tabBarLabelStyle: { fontSize: 11, lineHeight: 14, fontWeight: "600" },
+        // The web preview has no safe-area inset, so give the label room under the icon font's line box.
+        tabBarStyle: { backgroundColor: c.bg, borderTopColor: c.line, borderTopWidth: StyleSheet.hairlineWidth, ...(Platform.OS === "web" && { height: 58 }) },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Log", headerTitle: "Medilog", tabBarIcon: icon("🎙") }} />
-      <Tabs.Screen name="timeline" options={{ title: "Timeline", tabBarIcon: icon("🗂") }} />
-      <Tabs.Screen name="appointment" options={{ title: "Appointment", tabBarIcon: icon("🩺") }} />
+      <Tabs.Screen name="index" options={{ title: "Log", tabBarIcon: icon("mic", "mic-outline") }} />
+      <Tabs.Screen name="timeline" options={{ title: "Timeline", tabBarIcon: icon("time", "time-outline") }} />
+      <Tabs.Screen name="appointment" options={{ title: "Appointment", tabBarIcon: icon("document-text", "document-text-outline") }} />
     </Tabs>
   );
 }

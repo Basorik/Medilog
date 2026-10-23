@@ -4,7 +4,7 @@ import { scrubPII } from "./pii";
 import { screenRedFlags } from "./redflags";
 import { buildReportData, findDiagnosticLanguage, makeRange, renderHpiLocal, renderSoapboxLocal } from "./report";
 import { buildSeedEntries, DEMO_PROFILE, SEED_NOTES } from "./seed";
-import { editTag, tagsFor } from "./tags";
+import { editTag, entrySummary, tagsFor } from "./tags";
 
 const NOW = new Date(2026, 9, 22, 9, 0);
 
@@ -163,6 +163,17 @@ describe("appointment report", () => {
   it("guard catches diagnostic language from a model", () => {
     expect(findDiagnosticLanguage(["Pattern consistent with endometriosis"])).toBe("consistent with");
     expect(findDiagnosticLanguage(["“Dr said it's probably just bad periods”"])).toBeNull();
+  });
+});
+
+describe("entry summary", () => {
+  it("describes an entry in one line, patient's words first", () => {
+    const { fields } = extractLocal("Woke up at 3 AM with sharp cramping in my lower right side, took two ibuprofen, didn't help", NOW);
+    expect(entrySummary(fields)).toBe("Lower right side · sharp, cramping · woke me at 3 AM · ibuprofen: no relief · sleep disrupted");
+  });
+  it("truncates long entries", () => {
+    const { fields } = extractLocal("Sharp pain low on my right side, woke me at 3, nauseous, bloated, took ibuprofen and a heat pack, missed work", NOW);
+    expect(entrySummary(fields, 3).endsWith(" …")).toBe(true);
   });
 });
 

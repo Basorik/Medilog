@@ -4,28 +4,18 @@ import { Share, StyleSheet, Switch, TextInput, View } from "react-native";
 import { RELAY_URL } from "../lib/config";
 import { useJournal } from "../lib/journal";
 import { scheduleReminder } from "../lib/reminders";
-import { Button, Card, confirm, Pill, Row, Screen, T } from "../ui/components";
-import { radius, space, useColors } from "../ui/theme";
+import { confirm, Divider, Row, Screen, Section, Segmented, T } from "../ui/components";
+import { space, type, useColors } from "../ui/theme";
 
 const HOURS = [
-  [8, "8 am"],
-  [13, "1 pm"],
-  [20, "8 pm"],
-] as const;
+  { value: 8, label: "8 am" },
+  { value: 13, label: "1 pm" },
+  { value: 20, label: "8 pm" },
+];
 
-function Toggle({ label, detail, value, onChange }: { label: string; detail: string; value: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   const c = useColors();
-  return (
-    <View style={{ flexDirection: "row", gap: space.md, alignItems: "center" }}>
-      <View style={{ flex: 1, gap: 2 }}>
-        <T style={{ fontWeight: "600" }}>{label}</T>
-        <T kind="small" style={{ color: c.muted }}>
-          {detail}
-        </T>
-      </View>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: c.primary }} />
-    </View>
-  );
+  return <Switch value={value} onValueChange={onChange} trackColor={{ true: c.primary }} />;
 }
 
 export default function SettingsScreen() {
@@ -34,12 +24,14 @@ export default function SettingsScreen() {
   const [name, setName] = useState(j.profile.name);
   const [dob, setDob] = useState(j.profile.dob);
   const [notice, setNotice] = useState<string | null>(null);
-  const input = [styles.input, { borderColor: c.line, backgroundColor: c.surface, color: c.ink }];
+  const cloud = !!RELAY_URL && j.ai.ai;
+  const input = [styles.input, { color: c.ink }];
+  const saveProfile = () => void j.updateProfile({ name: name.trim(), dob: dob.trim() });
 
   const setReminder = async (enabled: boolean, hour = j.settings.reminder.hour) => {
     const scheduled = await scheduleReminder({ enabled, hour });
     if (enabled && !scheduled) {
-      setNotice("Notifications are turned off for Medilog. You can allow them in your phone's Settings.");
+      setNotice("Notifications are turned off for Medilog. You can allow them in your phone’s Settings.");
       return;
     }
     setNotice(null);
@@ -47,95 +39,86 @@ export default function SettingsScreen() {
   };
 
   return (
-    <Screen>
-      <Card>
-        <T kind="eyebrow">Daily reminder</T>
-        <Toggle
-          label="Remind me to check in"
-          detail="One gentle notification a day, scheduled on this phone."
-          value={j.settings.reminder.enabled}
-          onChange={(v) => void setReminder(v)}
-        />
+    <Screen safeTop={false}>
+      <Section title="Reminders" footer={notice ?? "One gentle notification a day, scheduled on this phone."}>
+        <Row icon="notifications-outline" title="Daily check-in" right={<Toggle value={j.settings.reminder.enabled} onChange={(v) => void setReminder(v)} />} />
         {j.settings.reminder.enabled && (
-          <Row gap={6}>
-            {HOURS.map(([h, label]) => (
-              <Pill key={h} tone="neutral" label={label} on={j.settings.reminder.hour === h} onPress={() => void setReminder(true, h)} />
-            ))}
-          </Row>
+          <View style={styles.inCard}>
+            <Segmented options={HOURS} value={j.settings.reminder.hour} onChange={(h) => void setReminder(true, h)} />
+          </View>
         )}
-        {notice && (
-          <T kind="small" style={{ color: c.warn }}>
-            {notice}
-          </T>
+      </Section>
+
+      <Section
+        title="Privacy"
+        footer={
+          (cloud
+            ? `Cloud AI sends the text of each note, with names, numbers and places removed, to ${j.ai.processor ?? "the Medilog AI service"}. Nothing is stored there. `
+            : "Notes are organised entirely on this phone. ") +
+          (j.encrypted ? "Your journal is stored encrypted on this phone." : "This browser preview is not encrypted.")
+        }
+      >
+        <Row
+          icon="mic-outline"
+          title="Keep voice on this phone"
+          detail="Only use on-device speech recognition"
+          right={<Toggle value={j.settings.requireOnDeviceSpeech} onChange={(v) => void j.updateSettings({ requireOnDeviceSpeech: v })} />}
+        />
+        {cloud && (
+          <>
+            <Divider inset={52} />
+            <Row
+              icon="sparkles-outline"
+              title="Cloud AI for richer notes"
+              detail="Off by default"
+              right={<Toggle value={j.settings.cloudAi} onChange={(v) => void j.updateSettings({ cloudAi: v })} />}
+            />
+          </>
         )}
-      </Card>
+      </Section>
 
-      <Card>
-        <T kind="eyebrow">Privacy</T>
-        <Toggle
-          label="Voice never leaves this phone"
-          detail="Only use on-device speech recognition. On Android, the Log screen offers to download the English model if it's missing; otherwise you'll type instead."
-          value={j.settings.requireOnDeviceSpeech}
-          onChange={(v) => void j.updateSettings({ requireOnDeviceSpeech: v })}
+      <Section title="Your details" footer="Only printed on the summary you choose to share. Never sent for AI processing.">
+        <TextInput style={input} placeholder="Your name" placeholderTextColor={c.muted} value={name} onChangeText={setName} onEndEditing={saveProfile} autoComplete="name" />
+        <Divider />
+        <TextInput style={input} placeholder="Date of birth (DD/MM/YYYY)" placeholderTextColor={c.muted} value={dob} onChangeText={setDob} onEndEditing={saveProfile} />
+      </Section>
+
+      <Section title="Emergency number" card={false}>
+        <Segmented
+          options={[
+            { value: "AU", label: "Australia · 000" },
+            { value: "US", label: "US · 911" },
+          ]}
+          value={j.settings.region}
+          onChange={(region) => void j.updateSettings({ region })}
         />
-        {RELAY_URL && j.ai.ai ? (
-          <Toggle
-            label="Use cloud AI for richer notes"
-            detail={`Sends the text of each note, with names, numbers and places removed, to ${j.ai.processor ?? "the Medilog AI service"} for AI structuring. Nothing is stored there. If it can't help with a note, the phone organises it instead. Off by default.`}
-            value={j.settings.cloudAi}
-            onChange={(v) => void j.updateSettings({ cloudAi: v })}
-          />
-        ) : (
-          <T kind="small" style={{ color: c.muted }}>
-            Notes are organised entirely on this phone. Nothing you log is sent anywhere.
-          </T>
-        )}
-        <T kind="small" style={{ color: c.muted }}>
-          Storage: {j.encrypted ? "encrypted on this device (SQLCipher, key in the secure keychain)" : "browser preview, not encrypted"}.
-        </T>
-      </Card>
+      </Section>
 
-      <Card>
-        <T kind="eyebrow">For your doctor’s summary</T>
-        <TextInput style={input} placeholder="Your name" placeholderTextColor={c.muted} value={name} onChangeText={setName} />
-        <TextInput style={input} placeholder="Date of birth (DD/MM/YYYY)" placeholderTextColor={c.muted} value={dob} onChangeText={setDob} />
-        <Button kind="ghost" label="Save" onPress={() => void j.updateProfile({ name: name.trim(), dob: dob.trim() })} />
-        <T kind="eyebrow" style={{ marginTop: space.sm }}>
-          Emergency number
-        </T>
-        <Row gap={6}>
-          <Pill tone="neutral" label="Australia · 000" on={j.settings.region === "AU"} onPress={() => void j.updateSettings({ region: "AU" })} />
-          <Pill tone="neutral" label="US · 911" on={j.settings.region === "US"} onPress={() => void j.updateSettings({ region: "US" })} />
-        </Row>
-      </Card>
-
-      <Card>
-        <T kind="eyebrow">Your data</T>
-        <Button kind="ghost" label="Export my data (JSON)" onPress={() => void Share.share({ message: j.exportJson(), title: "Medilog export" })} />
-        <T kind="small" style={{ color: c.muted }}>
-          Includes your notes and any appointment feedback. Only share it with people you trust, such as the study team.
-        </T>
-        <Button
-          kind="ghost"
-          label="Replace with sample patient"
-          onPress={() => confirm("Load the sample patient?", "This replaces your current entries with 17 fictional ones.", "Replace", () => void j.loadSample())}
+      <Section title="Your data" footer="The export includes your notes and any appointment feedback. Only share it with people you trust, such as the study team.">
+        <Row icon="share-outline" title="Export my data" onPress={() => void Share.share({ message: j.exportJson(), title: "Medilog export" })} />
+        <Divider inset={52} />
+        <Row
+          icon="people-outline"
+          title="Replace with sample patient"
+          onPress={() => confirm("Load the sample patient?", "This replaces your current notes with 17 fictional ones.", "Replace", () => void j.loadSample())}
         />
-        <Button
-          kind="danger"
-          label="Delete all my data"
-          onPress={() =>
-            confirm("Delete everything?", "Your journal and its encryption key will be erased from this phone. This can't be undone.", "Delete", () => void j.wipeEverything())
-          }
+        <Divider inset={52} />
+        <Row
+          icon="trash-outline"
+          tone="danger"
+          title="Delete all my data"
+          onPress={() => confirm("Delete everything?", "Your journal and its encryption key will be erased from this phone. This can’t be undone.", "Delete", () => void j.wipeEverything())}
         />
-      </Card>
+      </Section>
 
-      <T kind="small" style={{ color: c.muted, textAlign: "center" }}>
-        Medilog {Constants.expoConfig?.version ?? ""} · beta · not a medical device. In an emergency call {j.settings.region === "US" ? "911" : "000"}.
+      <T kind="caption" style={{ textAlign: "center" }}>
+        Medilog {Constants.expoConfig?.version ?? ""} · beta · not a medical device{"\n"}In an emergency call {j.settings.region === "US" ? "911" : "000"}
       </T>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  input: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: 11, fontSize: 16 },
+  inCard: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+  input: { paddingHorizontal: space.lg, paddingVertical: 15, ...type.body },
 });
