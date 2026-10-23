@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { tagsFor, type Tag } from "../lib/tags";
-import type { Entry } from "../lib/types";
+import { tagsFor, type Tag, type Entry } from "@medilog/engine";
 import { EngineBadge, TagChip } from "./ui";
 
 const DAY = 86_400_000;

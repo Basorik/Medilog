@@ -1,4 +1,4 @@
-import type { Entry, Profile } from "./types";
+import type { Entry, Profile } from "@medilog/engine";
 
 // Local-first, encrypted at rest. Records are AES-256-GCM encrypted with a
 // non-extractable key that lives in this browser's IndexedDB: the key cannot

@@ -132,6 +132,9 @@ export const emptyFields = (): HpiFields => ({
   cycle: null,
 });
 
+/** Deep copy that works on every JS runtime we ship to (Hermes included). */
+export const cloneFields = (f: HpiFields): HpiFields => JSON.parse(JSON.stringify(f)) as HpiFields;
+
 export const emptyPatch = (): AnswerPatch => ({
   treatmentEfficacy: null,
   addAssociated: [],

@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { coverage } from "../lib/extract";
+import { coverage, tagsFor, type Entry, type FollowUpOption, type SlotKey } from "@medilog/engine";
 import { useSpeech } from "../lib/speech";
-import { tagsFor } from "../lib/tags";
-import type { Entry, FollowUpOption, SlotKey } from "../lib/types";
 import { EngineBadge, TagChip } from "./ui";
 
 export const SAMPLES = [

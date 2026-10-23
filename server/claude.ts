@@ -2,8 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { priceUsage } from "../src/lib/costs";
-import type { Efficacy, ExtractionResult, SlotKey, Usage } from "../src/lib/types";
+import { priceUsage, type Efficacy, type ExtractionResult, type SlotKey, type Usage } from "@medilog/engine";
 
 // The two cloud calls. Both are stateless: the server keeps nothing, logs no
 // bodies, and only ever sees PII-scrubbed text or aggregate statistics.

@@ -10,6 +10,7 @@ import {
   TREATMENTS,
 } from "./lexicon";
 import {
+  cloneFields,
   emptyFields,
   emptyPatch,
   type AnswerPatch,
@@ -470,7 +471,7 @@ export function nextQuestion(f: HpiFields, region: Region): FollowUp | null {
 }
 
 export function applyPatch(f: HpiFields, p: AnswerPatch): HpiFields {
-  const next: HpiFields = structuredClone(f);
+  const next = cloneFields(f);
   if (p.treatmentEfficacy)
     next.treatments = next.treatments.map((t) => (t.efficacy === "unknown" ? { ...t, efficacy: p.treatmentEfficacy! } : t));
   for (const a of p.addAssociated) {

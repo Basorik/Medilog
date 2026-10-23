@@ -45,9 +45,23 @@ const ev = (kind: HoodKind, title: string, extra: Partial<HoodEvent> = {}): Hood
   ...extra,
 });
 
+// Same-origin on the web demo; the mobile app points this at a deployed relay.
+let relayBase = "";
+export function configureRelay(baseUrl: string) {
+  relayBase = baseUrl.replace(/\/$/, "");
+}
+
+const now = () => (globalThis as { performance?: { now(): number } }).performance?.now() ?? Date.now();
+
+function timeout(ms: number): AbortSignal {
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
+
 export async function fetchStatus(retries = 2): Promise<AiStatus> {
   try {
-    const res = await fetch("/api/status", { signal: AbortSignal.timeout(2500) });
+    const res = await fetch(`${relayBase}/api/status`, { signal: timeout(2500) });
     if (res.status === 404) return { ai: false }; // static hosting: no relay at all
     if (!res.ok) throw new Error(String(res.status));
     return (await res.json()) as AiStatus;
@@ -62,11 +76,11 @@ export async function fetchStatus(retries = 2): Promise<AiStatus> {
 }
 
 async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(`${relayBase}${path}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`${path} → ${res.status}`);
   return (await res.json()) as T;
@@ -110,9 +124,9 @@ export async function processLog(
   if (opts.source === "voice")
     emit(ev("device", "Speech captured", { detail: "This demo uses the browser's speech engine (on-device where the browser supports it). Production transcribes on the phone's neural engine (Whisper / Moonshine), so audio never leaves the device." }));
 
-  const t0 = performance.now();
+  const t0 = now();
   const redFlag = screenRedFlags(text);
-  const ms = (performance.now() - t0).toFixed(2);
+  const ms = (now() - t0).toFixed(2);
   if (redFlag) {
     emit(ev("safety", `Red flag: ${redFlag.title}`, { detail: `Matched "${redFlag.matched}" in ${ms} ms. Logging interrupted before any AI call; emergency directive shown.` }));
     return { redFlag, result: extractLocal(text, opts.now), engine: "local", events };

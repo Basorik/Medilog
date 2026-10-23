@@ -1,4 +1,4 @@
-import type { Efficacy, HpiFields, Term } from "./types";
+import { cloneFields, type Efficacy, type HpiFields, type Term } from "./types";
 
 // Tags are a view over the structured fields. Editing a tag edits the field,
 // so the patient corrects the record without ever seeing a form.
@@ -67,7 +67,7 @@ export type TagEdit =
   | { type: "efficacy"; value: Efficacy };
 
 export function editTag(f: HpiFields, tag: Tag, edit: TagEdit): HpiFields {
-  const next: HpiFields = structuredClone(f);
+  const next = cloneFields(f);
   const listFor = (kind: TagKind): Term[] | null =>
     kind === "character" ? next.character : kind === "associated" ? next.associated : kind === "negative" ? next.negatives : kind === "functional" ? next.functional : null;
 

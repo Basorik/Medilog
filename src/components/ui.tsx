@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Tag } from "../lib/tags";
+import type { Tag } from "@medilog/engine";
 
 export function TagChip({ tag, edited, onClick, size = "md" }: { tag: Tag; edited?: boolean; onClick?: () => void; size?: "sm" | "md" }) {
   const cls = `tag tag-${tag.kind} tag-${size}${edited ? " tag-edited" : ""}`;

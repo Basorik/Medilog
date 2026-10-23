@@ -3,8 +3,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { scrubPII } from "../src/lib/pii";
-import { screenRedFlags } from "../src/lib/redflags";
+import { scrubPII, screenRedFlags } from "@medilog/engine";
 import { extractWithClaude, MODELS, ModelDeclined, reportWithClaude } from "./claude";
 
 // Stateless relay. It holds the API key, re-applies the on-device safety and

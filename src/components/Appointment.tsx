@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { fmtDate, makeRange, reportToText, type RangeKey, type Report } from "../lib/report";
-import type { Entry, Profile } from "../lib/types";
+import { fmtDate, makeRange, reportToText, type RangeKey, type Report, type Entry, type Profile } from "@medilog/engine";
 import { EngineBadge } from "./ui";
 
 interface Props {

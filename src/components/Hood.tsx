@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { fmtUsd } from "../lib/costs";
-import type { AiStatus, HoodEvent } from "../lib/pipeline";
+import { fmtUsd, type AiStatus, type HoodEvent } from "@medilog/engine";
 
 const KIND: Record<HoodEvent["kind"], { icon: string; label: string }> = {
   device: { icon: "📱", label: "On device" },

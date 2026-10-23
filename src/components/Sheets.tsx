@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { EMERGENCY } from "../lib/redflags";
+import { EMERGENCY, editTag, EFFICACY_LABEL, type Tag, type TagEdit, type Efficacy, type Entry, type HpiFields, type RedFlag } from "@medilog/engine";
 import type { Settings } from "../lib/store";
-import { editTag, EFFICACY_LABEL, type Tag, type TagEdit } from "../lib/tags";
-import type { Efficacy, Entry, HpiFields, RedFlag } from "../lib/types";
 import { Sheet } from "./ui";
 
 export function TagSheet({ entry, tag, onSave, onClose }: { entry: Entry; tag: Tag; onSave: (fields: HpiFields) => void; onClose: () => void }) {

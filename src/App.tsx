@@ -4,13 +4,8 @@ import { Capture } from "./components/Capture";
 import { Hood } from "./components/Hood";
 import { RedFlagOverlay, SettingsSheet, TagSheet } from "./components/Sheets";
 import { Timeline } from "./components/Timeline";
-import { applyPatch } from "./lib/extract";
-import { fetchStatus, generateReport, processLog, savedEvent, type AiStatus, type HoodEvent } from "./lib/pipeline";
-import { makeRange, type RangeKey, type Report } from "./lib/report";
-import { BLANK_PROFILE, buildSeedEntries, DEMO_PROFILE } from "./lib/seed";
+import { applyPatch, fetchStatus, generateReport, processLog, savedEvent, type AiStatus, type HoodEvent, makeRange, type RangeKey, type Report, BLANK_PROFILE, buildSeedEntries, DEMO_PROFILE, type Tag, type Entry, type FollowUpOption, type HpiFields, type RedFlag } from "@medilog/engine";
 import { loadState, saveState, type AppState, type Settings } from "./lib/store";
-import type { Tag } from "./lib/tags";
-import type { Entry, FollowUpOption, HpiFields, RedFlag } from "./lib/types";
 
 type Tab = "log" | "timeline" | "appointment";
 

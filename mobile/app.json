@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Medilog",
+    "slug": "medilog",
+    "scheme": "medilog",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.medilog.app"
+    },
+    "android": {
+      "package": "com.medilog.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E6B63",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "allowBackup": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-sharing",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Medilog uses the microphone so you can describe your symptoms out loud.",
+          "speechRecognitionPermission": "Medilog turns your voice notes into text, on this iPhone where possible.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.as"
+          ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0E6B63"
+        }
+      ]
+    ]
+  }
+}

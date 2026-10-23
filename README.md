@@ -49,15 +49,15 @@ You can also type or dictate your own notes. The engine covers pelvic and abdomi
 
 | Proposal claim | Where it lives |
 | --- | --- |
-| Clinical gap detection and a one-question follow-up | `src/lib/extract.ts` (`coverage`, `nextQuestion`); `server/claude.ts` (same priority order in the prompt) |
-| Patient words → clinical vocabulary (e.g. "hurts when I go to the toilet" → *Dyschezia*) | `src/lib/lexicon.ts`; every field is stored as a `{ patient, clinical }` pair (`src/lib/types.ts`) |
-| Editable tags, 100% patient ownership | `src/lib/tags.ts`, `src/components/Sheets.tsx` |
-| Soapbox script + HPI one-pager | `src/lib/report.ts`, `src/components/Appointment.tsx` |
+| Clinical gap detection and a one-question follow-up | `packages/engine/src/extract.ts` (`coverage`, `nextQuestion`); `server/claude.ts` (same priority order in the prompt) |
+| Patient words → clinical vocabulary (e.g. "hurts when I go to the toilet" → *Dyschezia*) | `packages/engine/src/lexicon.ts`; every field is stored as a `{ patient, clinical }` pair (`packages/engine/src/types.ts`) |
+| Editable tags, 100% patient ownership | `packages/engine/src/tags.ts`, `src/components/Sheets.tsx` |
+| Soapbox script + HPI one-pager | `packages/engine/src/report.ts`, `src/components/Appointment.tsx` |
 | Numbers never come from the model | `buildReportData` computes every count, date and severity on the device. The model only writes prose, and `computeMetrics` re-attaches the computed figures. |
-| Never diagnoses | Prompts in `server/claude.ts`, plus `findDiagnosticLanguage` in `src/lib/report.ts`. Model output that contains diagnostic or advice language is replaced with the deterministic template, and the panel logs it as a guardrail event. |
-| Deterministic red-flag guardrails (000 / 911) | `src/lib/redflags.ts`. The rules run before any AI call, on the device, and again on the server. |
-| PII-stripped stateless relay | `src/lib/pii.ts` (device and server); `server/index.ts` keeps nothing, never logs bodies, and rate-limits by IP |
-| Local-first encrypted storage | `src/lib/store.ts`: AES-256-GCM with a non-extractable key held in IndexedDB; nothing is stored on the server |
+| Never diagnoses | Prompts in `server/claude.ts`, plus `findDiagnosticLanguage` in `packages/engine/src/report.ts`. Model output that contains diagnostic or advice language is replaced with the deterministic template, and the panel logs it as a guardrail event. |
+| Deterministic red-flag guardrails (000 / 911) | `packages/engine/src/redflags.ts`. The rules run before any AI call, on the device, and again on the server. |
+| PII-stripped stateless relay | `packages/engine/src/pii.ts` (device and server); `server/index.ts` keeps nothing, never logs bodies, and rate-limits by IP |
+| Local-first encrypted storage | Web demo: `src/lib/store.ts`, AES-256-GCM with a non-extractable key held in IndexedDB. Mobile app: SQLCipher with the key in the Keychain/Keystore (`mobile/src/lib/vault.ts`). Nothing is stored on the server. |
 | Fast model for daily extraction, frontier model for reports | `claude-haiku-5-5` for extraction and `claude-sonnet-5-5` for reports (override with `MEDILOG_EXTRACT_MODEL` / `MEDILOG_REPORT_MODEL`). Both use schema-enforced structured outputs. The report call opts into server-side refusal fallbacks. |
 | Unit economics under $0.10 per user per month | The panel shows measured cost per call and projects 30 logs plus 2 reports a month. Typical totals are $0.04–0.08. |
 
@@ -71,16 +71,20 @@ This is a proof of concept, so it is worth being precise in the room:
 - **Speech-to-text:** uses the browser's Web Speech API, requesting on-device recognition where the browser supports it. Some browsers (for example Chrome on desktop) may send audio to the browser vendor's speech service. The demo phrases simulate dictation and send no audio anywhere. Production would use an on-device Whisper or Moonshine model.
 - **Zero data retention and onshore hosting:** the demo relay calls the Claude API directly. A ZDR agreement and an `ap-southeast-2` deployment (for example via Amazon Bedrock) are production steps. Note that server-side fallbacks are a Claude API feature; on Bedrock, use the SDK's client-side fallback middleware instead.
 - **Red-flag rules and the PII scrubber:** both are illustrative and auditable, but neither is clinically validated or exhaustive. Both need clinical and privacy review before real patients use them.
-- **Not built yet:** accounts, encrypted cloud backup, a native mobile shell and clinic sharing.
+- **Not built yet:** accounts, encrypted cloud backup and clinic sharing. The native app (`mobile/`) exists but has not yet been run on a physical device.
+
+## Mobile app for user testing
+
+`mobile/` is an Expo (React Native) app for putting Medilog on testers' own phones. It has on-device speech, an encrypted SQLite journal, daily reminders, PDF sharing of the one-pager, a consent-based onboarding and post-visit pilot questions. It is on-device only by default. See [`mobile/README.md`](mobile/README.md) for running it and distributing it via TestFlight and Google Play internal testing.
 
 ## Project layout
 
 ```
-src/
-  lib/            engine: extract, lexicon, redflags, pii, report, tags, store, pipeline, seed
-  components/     Capture, Timeline, Appointment, Hood (under-the-hood panel), Sheets
-  App.tsx         state, persistence, orchestration
-server/
-  index.ts        stateless relay + static file server
-  claude.ts       prompts, schemas and the two Claude calls
+packages/engine/  shared, dependency-free engine: extract, lexicon, redflags, pii,
+                  report, tags, seed, pipeline (used by the web demo, relay and mobile app)
+src/              web investor demo: App.tsx, components/, lib/store.ts + speech.ts (browser-only)
+server/           stateless relay + static file server; claude.ts holds prompts and schemas
+mobile/           Expo app for user testing (src/app = routes, src/lib, src/ui)
 ```
+
+The engine runs unchanged on browsers, Node and React Native (Hermes). It is typechecked against a small list of allowed host APIs (`packages/engine/src/runtime.d.ts`), which keeps DOM-only or Node-only calls out of shared code.
