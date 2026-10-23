@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { EMERGENCY, editTag, EFFICACY_LABEL, type Tag, type TagEdit, type Efficacy, type Entry, type HpiFields, type RedFlag } from "@medilog/engine";
 import type { Settings } from "../lib/store";
-import { Sheet } from "./ui";
+import { Icon, Sheet } from "./ui";
 
 export function TagSheet({ entry, tag, onSave, onClose }: { entry: Entry; tag: Tag; onSave: (fields: HpiFields) => void; onClose: () => void }) {
   const [patient, setPatient] = useState(tag.label);
@@ -9,7 +9,7 @@ export function TagSheet({ entry, tag, onSave, onClose }: { entry: Entry; tag: T
   const apply = (edit: TagEdit) => onSave(editTag(entry.fields, tag, edit));
 
   return (
-    <Sheet title="Adjust this tag" onClose={onClose}>
+    <Sheet title="Correct this detail" onClose={onClose}>
       {tag.kind === "severity" ? (
         <>
           <p className="muted small">How bad was it at its worst?</p>
@@ -24,10 +24,10 @@ export function TagSheet({ entry, tag, onSave, onClose }: { entry: Entry; tag: T
       ) : tag.kind === "treatment" ? (
         <>
           <p className="muted small">How well did {entry.fields.treatments[tag.index]?.name.toLowerCase()} work this time?</p>
-          <div className="pills">
+          <div className="choices">
             {(["helped", "partial", "none", "unknown"] as Efficacy[]).map((e) => (
-              <button key={e} className={`pill ${entry.fields.treatments[tag.index]?.efficacy === e ? "pill-on" : ""}`} onClick={() => apply({ type: "efficacy", value: e })}>
-                {EFFICACY_LABEL[e]}
+              <button key={e} className={`choice ${entry.fields.treatments[tag.index]?.efficacy === e ? "choice-on" : ""}`} onClick={() => apply({ type: "efficacy", value: e })}>
+                {EFFICACY_LABEL[e].charAt(0).toUpperCase() + EFFICACY_LABEL[e].slice(1)}
               </button>
             ))}
           </div>
@@ -54,7 +54,7 @@ export function TagSheet({ entry, tag, onSave, onClose }: { entry: Entry; tag: T
         </form>
       )}
       <button className="link-btn danger" onClick={() => apply({ type: "remove" })}>
-        Remove this tag
+        Remove this detail
       </button>
     </Sheet>
   );
@@ -120,7 +120,9 @@ export function RedFlagOverlay({ flag, region, onDismiss }: { flag: RedFlag; reg
   const em = EMERGENCY[region];
   return (
     <div className="redflag" role="alertdialog" aria-modal="true" aria-labelledby="rf-title">
-      <div className="redflag-icon">!</div>
+      <div className="redflag-icon">
+        <Icon name="warning" size={34} />
+      </div>
       <h2 id="rf-title">{flag.title}</h2>
       {flag.crisis ? (
         <p>
@@ -134,7 +136,7 @@ export function RedFlagOverlay({ flag, region, onDismiss }: { flag: RedFlag; reg
         </p>
       )}
       <a className="btn call" href={`tel:${flag.crisis ? em.crisisTel : em.number}`}>
-        📞 Call {flag.crisis ? em.crisisLine : em.number}
+        <Icon name="phone" size={20} /> Call {flag.crisis ? em.crisisLine : em.number}
       </a>
       {flag.crisis && (
         <a className="btn call outline" href={`tel:${em.number}`}>

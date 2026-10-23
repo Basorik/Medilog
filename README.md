@@ -4,11 +4,11 @@
 
 This repository is an interactive investor demo of the three-screen product in the venture proposal:
 
-1. **Log**: one microphone button. The note is mapped onto the SOCRATES clinical schema, and the app asks the *single* highest-yield follow-up question as tap-to-answer pills.
-2. **Timeline**: notes are organised into clinical tags automatically. Tap any tag to correct it, so the patient owns the record without filling in a form.
+1. **Log**: one microphone button. The note is mapped onto the SOCRATES clinical schema, and the app asks the *single* highest-yield follow-up question with tap-to-answer choices.
+2. **Timeline**: each note becomes a one-line summary, organised by day. Tap a note to see its clinical tags and correct any of them, so the patient owns the record without filling in a form.
 3. **Appointment mode**: pick a timeframe and get two outputs. One is a 60-second first-person opener for the patient to read aloud. The other is a one-page clinical HPI for the doctor, which can be printed, saved as PDF, copied or emailed.
 
-On desktop, an **Under the hood** panel sits beside the phone and narrates every step as it happens: the red-flag screen, the identifiers stripped, exactly what leaves the device, which model ran, its token count and cost, and the projected AI cost per user per month. On a phone, the ⓘ button opens the same panel.
+On desktop, an **Under the hood** panel sits beside the phone and narrates every step as it happens: the red-flag screen, the identifiers stripped, exactly what leaves the device, which model ran, its token count and cost, and the projected AI cost per user per month. On a phone, the info button in the top bar opens the same panel.
 
 ## Run it
 
@@ -32,16 +32,16 @@ npm run build && ANTHROPIC_API_KEY=sk-ant-... npm start   # http://localhost:878
 
 `npm test` runs the engine and API tests. `npm run typecheck` runs the TypeScript checks.
 
-> **Pitch tip:** if the venue wifi is unreliable, open ⚙︎ Settings and choose **On-device only**. Every screen keeps working with no network at all.
+> **Pitch tip:** if the venue wifi is unreliable, open Settings (top right of the phone) and choose **On-device only**. Every screen keeps working with no network at all.
 
 ## Suggested demo path (about 3 minutes)
 
 The app opens with a fictional sample patient, Maya: 17 logs over 10 weeks of recurrent right-sided pelvic pain, a story that ends with "probably just bad periods".
 
-1. **Log**: tap **🌙 3 AM pelvic pain**. The note "types itself" as if dictated. The schema grid shows what was captured and highlights the gap. The app asks *"Did the ibuprofen and heat pack help, and did you have any fever or nausea?"* Tap an answer.
-2. **Timeline**: point out the 30-day severity chart with period markers, then tap a tag (such as `7/10` or `Ibuprofen: no relief`) to correct it. Show "What your doctor sees" next to "In your words".
-3. **Appointment**: choose **Last 30 days**, then **Prepare my appointment**. Read the opener aloud with **▶ Practise**. Switch to **🩺 For the doctor** for the one-pager: metrics, pertinent negatives, treatments tried and functional impact.
-4. **Safety**: back on Log, tap **🚨 Red-flag test**. A fixed rule interrupts logging with an emergency directive before any AI is involved.
+1. **Log**: tap the demo phrase **3 AM pelvic pain**. The note "types itself" as if dictated. The schema grid shows what was captured and highlights the gap. The app asks *"Did the ibuprofen and heat pack help, and did you have any fever or nausea?"* Tap an answer.
+2. **Timeline**: point out the 30-day severity chart with period markers, then tap a note and tap one of its tags (such as `7/10` or `Ibuprofen: no relief`) to correct it. Show "What your doctor sees" next to "In your words".
+3. **Appointment**: choose **30 days**, then **Prepare my appointment**. Read the opener aloud with **Read it to me**. Switch to **For your doctor** for the one-pager: metrics, pertinent negatives, treatments tried and functional impact.
+4. **Safety**: back on Log, tap **Red-flag test**. A fixed rule interrupts logging with an emergency directive before any AI is involved.
 
 You can also type or dictate your own notes. The engine covers pelvic and abdominal pain, headache and migraine, joint flares, back pain, fatigue and rash.
 

@@ -7,9 +7,9 @@ The user-testing version of Medilog, for real people logging real symptoms on th
 ## What's in it
 
 - **Onboarding.** Explains what Medilog is and isn't, the privacy model, and the emergency number. Records consent for the beta and optionally takes a name and date of birth (used only on the doctor's one-pager). Testers can choose to start with the sample patient instead.
-- **Log.** Tap the mic and speak, or type. The note is structured on the phone and the app asks one follow-up with tap-to-answer pills. Red-flag phrases open a full-screen emergency screen with a one-tap call to 000, 911, or a crisis line.
-- **Timeline.** A 30-day severity chart with period markers. Tap any tag to correct it. Individual entries can be deleted.
-- **Appointment.** A 60-second opener (with read-aloud practice) and the doctor's one-pager, shared as an A4 PDF through the system share sheet (email, AirDrop, print, Files). After a visit, a short card asks two pilot questions ("Did you feel heard?" and "Did your doctor use the summary?") and marks the date for "Since last visit".
+- **Log.** Tap the mic and speak, or type. The note is structured on the phone and the app asks one follow-up with tap-to-answer choices. Red-flag phrases open a full-screen emergency screen with a one-tap call to 000, 911, or a crisis line.
+- **Timeline.** A 30-day severity chart with period markers, then each note as a one-line summary by day. Tap a note to see its tags, correct any of them, or delete it.
+- **Appointment.** A 60-second opener (with read-aloud practice) and the doctor's one-pager, shared as an A4 PDF through the system share sheet (email, AirDrop, print, Files). After a visit, "Been to your appointment?" opens two pilot questions ("Did you feel heard?" and "Did your doctor use the summary?") and marks the date for the "Since visit" timeframe.
 - **Settings.** A daily reminder (a local notification), on-device-only voice, the emergency number, name and date of birth, data export as JSON, "Replace with sample patient", and "Delete all my data".
 
 ## Privacy model

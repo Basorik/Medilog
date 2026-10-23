@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { coverage, tagsFor, type Entry, type FollowUpOption, type SlotKey } from "@medilog/engine";
+import { coverage, entrySummary, type Entry, type FollowUpOption, type SlotKey } from "@medilog/engine";
 import { useSpeech } from "../lib/speech";
-import { EngineBadge, TagChip } from "./ui";
+import { EngineBadge, Icon } from "./ui";
 
 export const SAMPLES = [
-  { label: "🌙 3 AM pelvic pain", text: "Woke up at 3 AM with that sharp cramping in my lower right side again, took two ibuprofen and used a heat pack." },
-  { label: "🧠 Migraine at work", text: "Migraine started around 2pm behind my right eye, throbbing, lights are really bothering me. Had to leave work early." },
-  { label: "🦴 Morning joint flare", text: "My knees and wrists are swollen and stiff this morning, took over an hour to loosen up. Couldn't open jars." },
-  { label: "🚨 Red-flag test", text: "Sudden crushing chest pain spreading into my left arm and I'm sweating." },
+  { label: "3 AM pelvic pain", text: "Woke up at 3 AM with that sharp cramping in my lower right side again, took two ibuprofen and used a heat pack." },
+  { label: "Migraine at work", text: "Migraine started around 2pm behind my right eye, throbbing, lights are really bothering me. Had to leave work early." },
+  { label: "Morning joint flare", text: "My knees and wrists are swollen and stiff this morning, took over an hour to loosen up. Couldn't open jars." },
+  { label: "Red-flag test", text: "Sudden crushing chest pain spreading into my left arm and I'm sweating.", danger: true },
 ];
 
 const SLOTS: { key: SlotKey; label: string }[] = [
@@ -116,12 +116,11 @@ export function Capture({ entry, busy, onSubmit, onAnswer, onReset, onOpenTimeli
   return (
     <div className="screen capture">
       <header className="screen-head">
-        <p className="eyebrow">{new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</p>
         <h1>
           {greeting()}
-          {profileName ? `, ${profileName.split(" ")[0]}` : ""}.
+          {profileName ? `, ${profileName.split(" ")[0]}` : ""}
         </h1>
-        <p className="muted">Tell me what's going on, in your own words. Ten seconds is plenty.</p>
+        <p className="muted">{new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</p>
       </header>
 
       {phase === "typing" ? (
@@ -133,14 +132,12 @@ export function Capture({ entry, busy, onSubmit, onAnswer, onReset, onOpenTimeli
             placeholder="e.g. Woke at 3am with sharp pain low on my right side, took ibuprofen…"
             rows={4}
           />
-          <div className="row">
-            <button className="btn ghost" onClick={() => setPhase("idle")}>
-              Cancel
-            </button>
-            <button className="btn primary" disabled={!draft.trim()} onClick={() => onSubmit(draft.trim(), "text")}>
-              Log it
-            </button>
-          </div>
+          <button className="btn primary block" disabled={!draft.trim()} onClick={() => onSubmit(draft.trim(), "text")}>
+            Save note
+          </button>
+          <button className="link-btn" onClick={() => setPhase("idle")}>
+            Cancel
+          </button>
         </div>
       ) : (
         <div className="mic-zone">
@@ -168,7 +165,7 @@ export function Capture({ entry, busy, onSubmit, onAnswer, onReset, onOpenTimeli
                 <span className="rec-dot" /> Listening · 0:{String(seconds).padStart(2, "0")} {!simulating && "· tap to finish"}
               </>
             ) : speech.supported ? (
-              "Tap and speak"
+              "Tap and tell me how you feel"
             ) : (
               "Voice isn't available in this browser"
             )}
@@ -176,7 +173,7 @@ export function Capture({ entry, busy, onSubmit, onAnswer, onReset, onOpenTimeli
           {phase === "listening" && <p className="live-transcript">{speech.transcript || <span className="muted">…</span>}</p>}
           {phase === "idle" && (
             <button className="link-btn" onClick={() => setPhase("typing")}>
-              or type it instead
+              Type instead
             </button>
           )}
         </div>
@@ -184,10 +181,10 @@ export function Capture({ entry, busy, onSubmit, onAnswer, onReset, onOpenTimeli
 
       {phase === "idle" && (
         <div className="samples">
-          <p className="eyebrow">Demo phrases</p>
+          <p className="caption">Try a demo phrase</p>
           <div className="sample-row">
             {SAMPLES.map((s) => (
-              <button key={s.label} className={`sample ${s.label.startsWith("🚨") ? "sample-danger" : ""}`} onClick={() => simulate(s.text)}>
+              <button key={s.label} className={`sample ${s.danger ? "sample-danger" : ""}`} onClick={() => simulate(s.text)}>
                 {s.label}
               </button>
             ))}
@@ -213,16 +210,34 @@ function Result({
   onReset: () => void;
   onOpenTimeline: () => void;
 }) {
+  if (phase === "done" && entry) {
+    return (
+      <div className="screen done">
+        <div className="done-mark">
+          <Icon name="check" size={30} />
+        </div>
+        <h2>Saved to your timeline</h2>
+        <p className="muted">{entrySummary(entry.fields) || "Your note is saved."}</p>
+        <button className="btn primary block" onClick={onReset}>
+          Log another
+        </button>
+        <button className="link-btn" onClick={onOpenTimeline}>
+          See timeline
+        </button>
+        <p className="caption">
+          <EngineBadge engine={entry.engine} /> Stored encrypted on this phone
+        </p>
+      </div>
+    );
+  }
+
   const cov = entry ? coverage(entry.fields) : null;
   const targets = new Set(entry?.followUp && !entry.followUp.answer ? entry.followUp.targets : []);
   const captured = cov ? SLOTS.filter((s) => cov[s.key]).length : 0;
 
   return (
     <div className="screen capture-result">
-      <div className="bubble">
-        <span className="bubble-label">You said</span>
-        {transcript}
-      </div>
+      <blockquote className="said">“{transcript}”</blockquote>
 
       <div className="schema">
         <div className="schema-head">
@@ -242,49 +257,20 @@ function Result({
         </div>
       </div>
 
-      {entry && phase !== "processing" && (
-        <>
-          <div className="tag-row">
-            {tagsFor(entry.fields).map((t) => (
-              <TagChip key={t.key} tag={t} size="sm" />
+      {entry && phase === "followup" && entry.followUp && (
+        <div className="followup">
+          <p className="followup-q">{entry.followUp.question.replace(/^Logged\.\s*/, "")}</p>
+          <div className="choices">
+            {entry.followUp.options.map((o) => (
+              <button key={o.label} className="choice" onClick={() => onAnswer(o)}>
+                {o.label}
+              </button>
             ))}
           </div>
-
-          {phase === "followup" && entry.followUp && (
-            <div className="followup">
-              <p className="followup-q">{entry.followUp.question}</p>
-              <div className="pills">
-                {entry.followUp.options.map((o) => (
-                  <button key={o.label} className="pill" onClick={() => onAnswer(o)}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-              <button className="link-btn" onClick={() => onAnswer(null)}>
-                Skip
-              </button>
-            </div>
-          )}
-
-          {phase === "done" && (
-            <div className="done">
-              <div className="done-mark">✓</div>
-              <p>
-                <strong>Saved to your timeline.</strong>
-                <br />
-                <span className="muted">Encrypted on this phone. Tap any tag in the timeline to correct it.</span>
-              </p>
-              <div className="row">
-                <button className="btn ghost" onClick={onOpenTimeline}>
-                  View timeline
-                </button>
-                <button className="btn primary" onClick={onReset}>
-                  Log another
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+          <button className="link-btn" onClick={() => onAnswer(null)}>
+            Skip
+          </button>
+        </div>
       )}
     </div>
   );

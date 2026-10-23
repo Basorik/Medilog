@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { tagsFor, type Tag, type Entry } from "@medilog/engine";
-import { EngineBadge, TagChip } from "./ui";
+import { entrySummary, tagsFor, type Tag, type Entry } from "@medilog/engine";
+import { EngineBadge, Icon, SeverityBadge, TagChip } from "./ui";
 
 const DAY = 86_400_000;
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -28,53 +28,65 @@ export function Timeline({ entries, onEditTag, onDelete }: { entries: Entry[]; o
       <header className="screen-head">
         <h1>Timeline</h1>
         <p className="muted">
-          {entries.length} {entries.length === 1 ? "entry" : "entries"}, organised automatically. Tap a tag to correct it.
+          {entries.length} {entries.length === 1 ? "note" : "notes"}
         </p>
       </header>
       <SeverityStrip entries={entries} />
-      {!entries.length && <p className="empty">Nothing logged yet. Your first voice note will appear here.</p>}
+      {!entries.length && <p className="empty">Nothing here yet. Your notes will appear here, organised by day.</p>}
       {groups.map(([day, list]) => (
         <section key={day} className="day">
           <h2 className="day-label">{dayLabel(day, today)}</h2>
-          {list.map((e) => (
-            <EntryCard key={e.id} entry={e} onEditTag={onEditTag} onDelete={onDelete} />
-          ))}
+          <div className="list">
+            {list.map((e) => (
+              <EntryRow key={e.id} entry={e} onEditTag={onEditTag} onDelete={onDelete} />
+            ))}
+          </div>
         </section>
       ))}
     </div>
   );
 }
 
-function EntryCard({ entry, onEditTag, onDelete }: { entry: Entry; onEditTag: (entry: Entry, tag: Tag) => void; onDelete: (id: string) => void }) {
+function EntryRow({ entry, onEditTag, onDelete }: { entry: Entry; onEditTag: (entry: Entry, tag: Tag) => void; onDelete: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const time = new Date(entry.createdAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
   return (
-    <article className={`entry ${entry.redFlag ? "entry-flag" : ""}`}>
-      <div className="entry-head">
+    <article className={`entry ${open ? "entry-open" : ""}`}>
+      <button className="entry-row" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="entry-time">{time}</span>
-        <span className="entry-title">{entry.fields.complaint?.patient ?? "Note"}</span>
-        {entry.redFlag && <span className="badge badge-flag">⚠ Emergency advice shown</span>}
-        <EngineBadge engine={entry.engine} />
-      </div>
-      <div className="tag-row">
-        {tagsFor(entry.fields).map((t) => (
-          <TagChip key={t.key} tag={t} edited={entry.editedTags.includes(t.key)} onClick={() => onEditTag(entry, t)} />
-        ))}
-      </div>
-      <button className="link-btn small" onClick={() => setOpen(!open)}>
-        {open ? "Hide original note" : "Show original note"}
+        <span className="entry-main">
+          <span className="entry-title">
+            {entry.redFlag && (
+              <span className="flag-icon" title="Emergency advice was shown">
+                <Icon name="warning" size={15} />
+              </span>
+            )}
+            {entry.fields.complaint?.patient ?? "Note"}
+          </span>
+          <span className="entry-summary">{entrySummary(entry.fields) || entry.rawText}</span>
+        </span>
+        <SeverityBadge value={entry.fields.severity} />
       </button>
       {open && (
         <div className="entry-more">
+          <p className="caption">What was noted · tap to correct</p>
+          <div className="tag-row">
+            {tagsFor(entry.fields).map((t) => (
+              <TagChip key={t.key} tag={t} edited={entry.editedTags.includes(t.key)} onClick={() => onEditTag(entry, t)} />
+            ))}
+          </div>
           <blockquote>“{entry.rawText}”</blockquote>
-          {entry.followUp && (
-            <p className="muted small">
-              Asked: {entry.followUp.question} → <strong>{entry.followUp.answer ?? "not answered"}</strong>
+          {entry.followUp?.answer && entry.followUp.answer !== "Skipped" && (
+            <p className="caption">
+              {entry.followUp.question.replace(/^Logged\.\s*/, "")} <strong>{entry.followUp.answer}</strong>
             </p>
           )}
-          <button className="link-btn small danger" onClick={() => onDelete(entry.id)}>
-            Delete entry
-          </button>
+          <div className="entry-foot">
+            <EngineBadge engine={entry.engine} />
+            <button className="link-btn small danger" onClick={() => onDelete(entry.id)}>
+              Delete note
+            </button>
+          </div>
         </div>
       )}
     </article>
@@ -114,8 +126,8 @@ function SeverityStrip({ entries }: { entries: Entry[] }) {
   return (
     <figure className="strip">
       <figcaption>
-        <span>Worst severity per day</span>
-        <span className="muted">last 30 days</span>
+        <span>Worst pain each day</span>
+        <span className="muted">Last 30 days</span>
       </figcaption>
       <div className="strip-plot">
         <div className="strip-axis" aria-hidden>

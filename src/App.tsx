@@ -4,6 +4,7 @@ import { Capture } from "./components/Capture";
 import { Hood } from "./components/Hood";
 import { RedFlagOverlay, SettingsSheet, TagSheet } from "./components/Sheets";
 import { Timeline } from "./components/Timeline";
+import { Icon } from "./components/ui";
 import { applyPatch, fetchStatus, generateReport, processLog, savedEvent, type AiStatus, type HoodEvent, makeRange, type RangeKey, type Report, BLANK_PROFILE, buildSeedEntries, DEMO_PROFILE, type Tag, type Entry, type FollowUpOption, type HpiFields, type RedFlag } from "@medilog/engine";
 import { loadState, saveState, type AppState, type Settings } from "./lib/store";
 
@@ -169,13 +170,13 @@ export default function App() {
             <Logo /> Medilog
           </span>
           <span className="vault" title="Your data is encrypted and stored only on this device">
-            🔒 On-device
+            <Icon name="lock" size={13} /> On this phone
           </span>
           <button className="icon-btn hood-toggle" onClick={() => setHoodOpen(true)} aria-label="Under the hood">
-            ⓘ
+            <Icon name="info" />
           </button>
           <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Settings">
-            ⚙︎
+            <Icon name="settings" />
           </button>
         </div>
 
@@ -204,13 +205,13 @@ export default function App() {
         <nav className="tabbar">
           {(
             [
-              ["log", "🎙", "Log"],
-              ["timeline", "🗂", "Timeline"],
-              ["appointment", "🩺", "Appointment"],
+              ["log", "mic", "Log"],
+              ["timeline", "clock", "Timeline"],
+              ["appointment", "doc", "Appointment"],
             ] as const
           ).map(([k, icon, label]) => (
             <button key={k} className={tab === k ? "tab-on" : ""} onClick={() => setTab(k)} aria-current={tab === k ? "page" : undefined}>
-              <span aria-hidden>{icon}</span>
+              <Icon name={icon} size={23} />
               {label}
             </button>
           ))}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { fmtDate, makeRange, reportToText, type RangeKey, type Report, type Entry, type Profile } from "@medilog/engine";
-import { EngineBadge } from "./ui";
+import { EngineBadge, Icon } from "./ui";
+
+const RANGE_LABEL: Record<RangeKey, string> = { "7d": "7 days", "30d": "30 days", "90d": "90 days", "since-consult": "Since visit" };
 
 interface Props {
   entries: Entry[];
@@ -23,19 +25,22 @@ export function Appointment({ entries, profile, report, busy, onGenerate }: Prop
   return (
     <div className="screen appointment">
       <header className="screen-head">
-        <h1>Appointment mode</h1>
-        <p className="muted">Turn your logs into a 60-second opener for you, and a one-page history for your doctor.</p>
+        <h1>Appointment</h1>
+        <p className="muted">What to say, and what to show your doctor</p>
       </header>
 
-      <div className="range-row" role="radiogroup" aria-label="Timeframe">
-        {options.map((k) => (
-          <button key={k} role="radio" aria-checked={range === k} className={`chip ${range === k ? "chip-on" : ""}`} onClick={() => setRange(k)}>
-            {k === "since-consult" ? "Since last consult" : makeRange(k, now, null).label}
-          </button>
-        ))}
+      <div className="range-block">
+        <div className="seg range-row" role="radiogroup" aria-label="Timeframe">
+          {options.map((k) => (
+            <button key={k} role="radio" aria-checked={range === k} className={range === k ? "seg-on" : ""} onClick={() => setRange(k)}>
+              {RANGE_LABEL[k]}
+            </button>
+          ))}
+        </div>
+        <p className="caption center">{inRange ? `${inRange} ${inRange === 1 ? "note" : "notes"} in this period` : "No notes in this period yet"}</p>
       </div>
       <button className="btn primary block" disabled={busy || !inRange} onClick={() => onGenerate(range)}>
-        {busy ? "Preparing…" : `Prepare my appointment · ${inRange} log${inRange === 1 ? "" : "s"}`}
+        {busy ? "Preparing…" : "Prepare my appointment"}
       </button>
 
       {busy && (
@@ -50,10 +55,10 @@ export function Appointment({ entries, profile, report, busy, onGenerate }: Prop
         <>
           <div className="seg" role="tablist">
             <button role="tab" aria-selected={view === "script"} className={view === "script" ? "seg-on" : ""} onClick={() => setView("script")}>
-              🗣 My script
+              Your script
             </button>
             <button role="tab" aria-selected={view === "doctor"} className={view === "doctor" ? "seg-on" : ""} onClick={() => setView("doctor")}>
-              🩺 For the doctor
+              For your doctor
             </button>
           </div>
           {view === "script" ? <Script report={report} /> : <OnePager report={report} profile={profile} />}
@@ -84,7 +89,7 @@ function Script({ report }: { report: Report }) {
   return (
     <section className="script">
       <div className="script-head">
-        <span className="eyebrow">Your 60-second opener · read it before the questions start</span>
+        <span className="caption">Read this before the questions start</span>
         <EngineBadge engine={report.engine} />
       </div>
       <ol>
@@ -93,8 +98,9 @@ function Script({ report }: { report: Report }) {
         ))}
       </ol>
       {canSpeak && (
-        <button className="btn ghost block" onClick={speak}>
-          {speaking ? "■ Stop" : "▶ Practise: read it aloud to me"}
+        <button className="btn soft block" onClick={speak}>
+          <Icon name={speaking ? "stop" : "speaker"} size={18} />
+          {speaking ? "Stop" : "Read it to me"}
         </button>
       )}
     </section>
@@ -162,13 +168,13 @@ function OnePager({ report, profile }: { report: Report; profile: Profile }) {
       </article>
       <div className="row actions">
         <button className="btn ghost" onClick={() => window.print()}>
-          🖨 Print / PDF
+          <Icon name="print" size={18} /> Print / PDF
         </button>
         <button className="btn ghost" onClick={copy}>
-          {copied ? "✓ Copied" : "📋 Copy"}
+          <Icon name={copied ? "check" : "copy"} size={18} /> {copied ? "Copied" : "Copy"}
         </button>
         <a className="btn ghost" href={mail}>
-          ✉️ Email
+          <Icon name="mail" size={18} /> Email
         </a>
       </div>
     </section>
