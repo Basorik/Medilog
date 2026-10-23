@@ -20,7 +20,7 @@ The user-testing version of Medilog, for real people logging real symptoms on th
 | Voice | `expo-speech-recognition` with `requiresOnDeviceRecognition` whenever the phone supports it. Otherwise it falls back to the platform's speech service, and the Log screen says so. With **Voice never leaves this phone** turned on, it falls back to typing instead. |
 | Network | **None by default.** Notes are structured by the on-device engine. Cloud AI is only possible if the build sets `EXPO_PUBLIC_MEDILOG_RELAY_URL` *and* the user opts in. Even then, only de-identified text is sent. |
 
-To build a version that can use cloud AI, deploy the relay (`server/` in the repo root) and add its URL to a build profile in `eas.json`, for example `"env": { "EXPO_PUBLIC_MEDILOG_RELAY_URL": "https://relay.example.com" }`. Leave the variable out entirely for on-device-only builds: EAS rejects empty values.
+To let testers opt into cloud AI, deploy the relay to AWS Lambda in Sydney (Claude on Amazon Bedrock, Australian profile) by following [`deploy/aws/README.md`](../deploy/aws/README.md). Then give the app `EXPO_PUBLIC_MEDILOG_RELAY_URL` and `EXPO_PUBLIC_MEDILOG_RELAY_TOKEN`: in `mobile/.env.local` for development builds, or with `eas env:set` for preview and production builds. Leave them unset for on-device-only builds.
 | Reminders | Local scheduled notifications. There is no push server and no device token. |
 
 Journals are tied to the phone: the key is not backed up, so a journal restored onto a new phone can't be opened. The app detects this case and starts a fresh journal instead of failing.

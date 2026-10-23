@@ -1,8 +1,10 @@
 // Extraction eval: scores an engine against the held-out notes in cases.ts.
 //
-//   npx tsx eval/run.ts rules
-//   ANTHROPIC_API_KEY=... npx tsx eval/run.ts claude
-//   npx tsx eval/run.ts local --base-url http://localhost:11434/v1 --model gemma3n:e4b
+//   npm run eval -- rules
+//   ANTHROPIC_API_KEY=... npm run eval -- cloud                       # Claude API
+//   AWS_PROFILE=medilog MEDILOG_PROVIDER=bedrock npm run eval -- cloud  # Bedrock, Australia
+//   npm run eval -- local --base-url http://localhost:11434/v1 --model gemma3n:e4b
+//   Add --sensitive to measure how often sensitive-but-legitimate notes are declined.
 //
 // "local" talks to any OpenAI-compatible server with JSON-schema output
 // (Ollama, llama.cpp's llama-server, LM Studio), as a stand-in for the small
@@ -12,8 +14,8 @@
 import { extractLocal, screenRedFlags, type ExtractionResult, type HpiFields, type Term } from "@medilog/engine";
 import { writeFileSync } from "node:fs";
 import { z } from "zod";
-import { EXTRACT_SYSTEM, Extraction, extractionUserMessage, extractWithClaude, normaliseExtraction } from "../server/claude";
-import { CASES, RED_FLAG_CASES, URGENT_CARE_CASES, type Case, type Region } from "./cases";
+import { EXTRACT_SYSTEM, Extraction, extractionUserMessage, extractWithClaude, MODELS, ModelDeclined, normaliseExtraction, PROCESSOR } from "../server/claude";
+import { CASES, RED_FLAG_CASES, SENSITIVE_CASES, URGENT_CARE_CASES, type Case, type Region } from "./cases";
 
 const args = process.argv.slice(2);
 const engine = args[0] ?? "rules";
@@ -51,9 +53,12 @@ function localServer(baseUrl: string, model: string): Extractor {
   };
 }
 
+const errorText = (err: unknown) => (err instanceof ModelDeclined ? `declined: ${err.category ?? "no usable output"}` : (err as Error).message);
+
 const extractors: Record<string, () => Extractor> = {
   rules: () => async (note) => extractLocal(note, LOGGED),
-  claude: () => async (note) => (await extractWithClaude({ text: note, loggedAt: "Tue 09:30", prior: null })).result,
+  // Whichever provider the relay is configured for (MEDILOG_PROVIDER=anthropic|bedrock).
+  cloud: () => async (note) => (await extractWithClaude({ text: note, loggedAt: "Tue 09:30", prior: null })).result,
   local: () => localServer(flag("base-url") ?? "http://localhost:11434/v1", flag("model") ?? "gemma3n:e4b"),
 };
 
@@ -152,10 +157,32 @@ function score(c: Case, r: ExtractionResult, ms: number): Score {
 
 const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%`.padStart(4) : "  – ");
 
+async function sensitive(extract: Extractor, label: string) {
+  console.log(`\nSensitive-topic notes: ${label} · ${SENSITIVE_CASES.length} notes\n`);
+  const outcomes: Record<string, number> = {};
+  for (const note of SENSITIVE_CASES) {
+    let outcome: string;
+    if (screenRedFlags(note)) outcome = "blocked by red-flag rules (never sent)";
+    else {
+      try {
+        await extract(note);
+        outcome = "ok";
+      } catch (err) {
+        outcome = errorText(err);
+      }
+    }
+    outcomes[outcome] = (outcomes[outcome] ?? 0) + 1;
+    console.log(`  ${outcome === "ok" ? "✓" : "✗"} ${outcome.padEnd(14)} ${note}`);
+  }
+  console.log("\nSummary:");
+  for (const [k, v] of Object.entries(outcomes)) console.log(`  ${k.padEnd(40)} ${v}`);
+}
+
 async function main() {
   const make = extractors[engine];
-  if (!make) throw new Error(`unknown engine "${engine}" (use rules, claude or local)`);
+  if (!make) throw new Error(`unknown engine "${engine}" (use rules, cloud or local)`);
   const extract = make();
+  if (args.includes("--sensitive")) return sensitive(extract, engine === "cloud" ? `cloud:${MODELS.extract} via ${PROCESSOR}` : engine);
   const results: Score[] = [];
   for (const c of CASES) {
     const t0 = Date.now();
@@ -163,14 +190,14 @@ async function main() {
       const r = await extract(c.note);
       results.push(score(c, r, Date.now() - t0));
     } catch (err) {
-      results.push({ id: c.id, ok: false, error: (err as Error).message, ms: Date.now() - t0, tx: { expected: 0, found: 0, efficacyRight: 0, extra: 0 }, terms: { expected: 0, found: 0, extra: 0 }, negatives: { expected: 0, found: 0, extra: 0 }, misses: [] });
+      results.push({ id: c.id, ok: false, error: errorText(err), ms: Date.now() - t0, tx: { expected: 0, found: 0, efficacyRight: 0, extra: 0 }, terms: { expected: 0, found: 0, extra: 0 }, negatives: { expected: 0, found: 0, extra: 0 }, misses: [] });
     }
   }
 
   const done = results.filter((r) => r.ok);
   const count = (k: "complaint" | "site" | "severity" | "nocturnal" | "followUpOk") => [done.filter((r) => r[k] === true).length, done.filter((r) => r[k] !== undefined).length] as const;
   const sum = (f: (r: Score) => number) => done.reduce((a, r) => a + f(r), 0);
-  const label = engine === "local" ? `local:${flag("model") ?? "gemma3n:e4b"}` : engine;
+  const label = engine === "local" ? `local:${flag("model") ?? "gemma3n:e4b"}` : engine === "cloud" ? `cloud:${MODELS.extract} via ${PROCESSOR}` : engine;
 
   console.log(`\nExtraction eval: ${label} · ${CASES.length} held-out notes\n`);
   const rows: [string, string][] = [

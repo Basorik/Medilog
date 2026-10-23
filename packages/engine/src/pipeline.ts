@@ -34,6 +34,8 @@ export interface HoodEvent {
 export interface AiStatus {
   ai: boolean;
   models?: { extract: string; report: string };
+  /** Where notes are processed, e.g. "Amazon Bedrock in Australia". Shown before a user opts in. */
+  processor?: string;
 }
 
 let seq = 0;
@@ -47,8 +49,11 @@ const ev = (kind: HoodKind, title: string, extra: Partial<HoodEvent> = {}): Hood
 
 // Same-origin on the web demo; the mobile app points this at a deployed relay.
 let relayBase = "";
-export function configureRelay(baseUrl: string) {
+let relayHeaders: Record<string, string> = {};
+/** Points the app at a deployed relay; `token` is the shared beta access token it checks. */
+export function configureRelay(baseUrl: string, token?: string) {
   relayBase = baseUrl.replace(/\/$/, "");
+  relayHeaders = token ? { "x-medilog-token": token } : {};
 }
 
 const now = () => (globalThis as { performance?: { now(): number } }).performance?.now() ?? Date.now();
@@ -78,7 +83,7 @@ export async function fetchStatus(retries = 2): Promise<AiStatus> {
 async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<T> {
   const res = await fetch(`${relayBase}${path}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...relayHeaders },
     body: JSON.stringify(body),
     signal: timeout(timeoutMs),
   });

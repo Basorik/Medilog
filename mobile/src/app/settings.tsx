@@ -81,7 +81,7 @@ export default function SettingsScreen() {
         {RELAY_URL && j.ai.ai ? (
           <Toggle
             label="Use cloud AI for richer notes"
-            detail="Sends the text of each note, with names, numbers and places removed, for AI structuring. Nothing is stored there. Off by default."
+            detail={`Sends the text of each note, with names, numbers and places removed, to ${j.ai.processor ?? "the Medilog AI service"} for AI structuring. Nothing is stored there. If it can't help with a note, the phone organises it instead. Off by default.`}
             value={j.settings.cloudAi}
             onChange={(v) => void j.updateSettings({ cloudAi: v })}
           />

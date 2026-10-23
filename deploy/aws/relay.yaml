@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Medilog AI relay: a Lambda function behind a Function URL that calls Claude on
+  Amazon Bedrock through the Australian cross-region profile (Sydney + Melbourne).
+  Deploy in ap-southeast-2 with deploy/aws/deploy.sh.
+
+Parameters:
+  AccessToken:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: Shared beta token the app sends as x-medilog-token (generate with `openssl rand -hex 32`).
+  ExtractModel:
+    Type: String
+    Default: anthropic.claude-haiku-5-5
+    Description: Bedrock model ID for note extraction (without the profile prefix).
+  ReportModel:
+    Type: String
+    Default: anthropic.claude-sonnet-5-5
+    Description: Bedrock model ID for appointment reports (without the profile prefix).
+
+Rules:
+  SydneyOnly:
+    Assertions:
+      - Assert: !Equals [!Ref "AWS::Region", ap-southeast-2]
+        AssertDescription: Deploy this stack in ap-southeast-2 (Sydney) so inference stays on the Australian profile.
+
+Resources:
+  RelayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: InvokeClaudeInAustraliaOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # The Australian inference profiles, in this account...
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/au.${ExtractModel}
+                  - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/au.${ReportModel}
+              # ...and the models in the two regions the profile routes to.
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:ap-southeast-2::foundation-model/${ExtractModel}
+                  - !Sub arn:${AWS::Partition}:bedrock:ap-southeast-4::foundation-model/${ExtractModel}
+                  - !Sub arn:${AWS::Partition}:bedrock:ap-southeast-2::foundation-model/${ReportModel}
+                  - !Sub arn:${AWS::Partition}:bedrock:ap-southeast-4::foundation-model/${ReportModel}
+
+  RelayFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Medilog AI relay (stateless; logs outcome counts only)
+      Runtime: nodejs22.x
+      Architectures: [arm64]
+      Handler: index.handler
+      MemorySize: 512
+      Timeout: 75
+      Role: !GetAtt RelayRole.Arn
+      # Placeholder; deploy.sh uploads the real bundle (dist-lambda/relay.zip).
+      Code:
+        ZipFile: |
+          exports.handler = async () => ({ statusCode: 503, body: '{"error":"relay code not uploaded yet"}' });
+      Environment:
+        Variables:
+          MEDILOG_PROVIDER: bedrock
+          MEDILOG_EXTRACT_MODEL: !Sub au.${ExtractModel}
+          MEDILOG_REPORT_MODEL: !Sub au.${ReportModel}
+          MEDILOG_ACCESS_TOKEN: !Ref AccessToken
+
+  RelayLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${RelayFunction}
+      RetentionInDays: 30
+
+  RelayUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt RelayFunction.Arn
+      AuthType: NONE
+
+  # Public URL; the relay itself checks the access token on every AI call.
+  RelayUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RelayFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  RelayUrlFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RelayFunction
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  RelayUrl:
+    Description: Set this as EXPO_PUBLIC_MEDILOG_RELAY_URL in the app.
+    Value: !GetAtt RelayUrl.FunctionUrl
+  FunctionName:
+    Value: !Ref RelayFunction

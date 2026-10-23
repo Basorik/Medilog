@@ -11,9 +11,12 @@
     "start": "NODE_ENV=production tsx server/index.ts",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "eval": "tsx eval/run.ts"
+    "eval": "tsx eval/run.ts",
+    "build:lambda": "node scripts/build-lambda.mjs",
+    "smoke": "tsx server/smoke.ts"
   },
   "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^1.0.0",
     "@anthropic-ai/sdk": "^1.1.0",
     "@medilog/engine": "file:packages/engine",
     "react": "^19.3.1",
@@ -26,6 +29,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.6",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",

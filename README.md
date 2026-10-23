@@ -56,7 +56,7 @@ You can also type or dictate your own notes. The engine covers pelvic and abdomi
 | Numbers never come from the model | `buildReportData` computes every count, date and severity on the device. The model only writes prose, and `computeMetrics` re-attaches the computed figures. |
 | Never diagnoses | Prompts in `server/claude.ts`, plus `findDiagnosticLanguage` in `packages/engine/src/report.ts`. Model output that contains diagnostic or advice language is replaced with the deterministic template, and the panel logs it as a guardrail event. |
 | Deterministic red-flag guardrails (000 / 911) | `packages/engine/src/redflags.ts`. The rules run before any AI call, on the device, and again on the server. |
-| PII-stripped stateless relay | `packages/engine/src/pii.ts` (device and server); `server/index.ts` keeps nothing, never logs bodies, and rate-limits by IP |
+| PII-stripped stateless relay | `packages/engine/src/pii.ts` (device and server); `server/relay.ts` keeps nothing, never logs bodies, requires an access token when deployed, and rate-limits by IP |
 | Local-first encrypted storage | Web demo: `src/lib/store.ts`, AES-256-GCM with a non-extractable key held in IndexedDB. Mobile app: SQLCipher with the key in the Keychain/Keystore (`mobile/src/lib/vault.ts`). Nothing is stored on the server. |
 | Fast model for daily extraction, frontier model for reports | `claude-haiku-5-5` for extraction and `claude-sonnet-5-5` for reports (override with `MEDILOG_EXTRACT_MODEL` / `MEDILOG_REPORT_MODEL`). Both use schema-enforced structured outputs. The report call opts into server-side refusal fallbacks. |
 | Unit economics under $0.10 per user per month | The panel shows measured cost per call and projects 30 logs plus 2 reports a month. Typical totals are $0.04–0.08. |
@@ -73,6 +73,10 @@ This is a proof of concept, so it is worth being precise in the room:
 - **Red-flag rules and the PII scrubber:** both are illustrative and auditable, but neither is clinically validated or exhaustive. Both need clinical and privacy review before real patients use them.
 - **Not built yet:** accounts, encrypted cloud backup and clinic sharing. The native app (`mobile/`) exists but has not yet been run on a physical device.
 
+## Deploying the AI relay
+
+For anything beyond local development, the relay runs as an AWS Lambda function in Sydney and calls Claude on Amazon Bedrock through the Australian cross-region profile. It uses an IAM role instead of an API key, requires an access token, and logs outcome counts only. Set it up with [`deploy/aws/README.md`](deploy/aws/README.md), a step-by-step guide with a CloudFormation template and a one-command deploy script. `npm run smoke` checks the AI path end to end.
+
 ## Mobile app for user testing
 
 `mobile/` is an Expo (React Native) app for putting Medilog on testers' own phones. It has on-device speech, an encrypted SQLite journal, daily reminders, PDF sharing of the one-pager, a consent-based onboarding and post-visit pilot questions. It is on-device only by default. See [`mobile/README.md`](mobile/README.md) for running it and distributing it via TestFlight and Google Play internal testing.
@@ -83,7 +87,9 @@ This is a proof of concept, so it is worth being precise in the room:
 packages/engine/  shared, dependency-free engine: extract, lexicon, redflags, pii,
                   report, tags, seed, pipeline (used by the web demo, relay and mobile app)
 src/              web investor demo: App.tsx, components/, lib/store.ts + speech.ts (browser-only)
-server/           stateless relay + static file server; claude.ts holds prompts and schemas
+server/           relay: relay.ts (shared handler), index.ts (local server), lambda.ts (AWS),
+                  claude.ts (prompts, schemas, Anthropic or Bedrock), smoke.ts
+deploy/aws/       CloudFormation template, deploy script and setup guide for the relay
 mobile/           Expo app for user testing (src/app = routes, src/lib, src/ui)
 ```
 
